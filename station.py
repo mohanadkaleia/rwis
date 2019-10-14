@@ -5,6 +5,7 @@ import config
 import json
 import time
 import asyncio
+
 from concurrent.futures import ProcessPoolExecutor
 
 
@@ -46,17 +47,17 @@ def produce():
 
 
 def consume():
-    # Prepare the connection with the remote queue
-    remote_connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.server['url']))
-    remote_channel = remote_connection.channel()
-    remote_channel.queue_declare(queue=REMOTE_QUEUE, durable=True)
-
     # Prepare the local station connection
     local_connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.station['url']))
     local_channel = local_connection.channel()
     local_channel.queue_declare(queue=LOCAL_QUEUE, durable=True)
 
     print(' [*] Consumer is waiting for messages. To exit press CTRL+C')
+
+    # Prepare the connection with the remote queue
+    remote_connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.server['url']))
+    remote_channel = remote_connection.channel()
+    remote_channel.queue_declare(queue=REMOTE_QUEUE, durable=True)
 
     def callback(ch, method, properties, body):
         print(" [x] Received %r" % body)
