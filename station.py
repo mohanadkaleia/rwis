@@ -31,7 +31,7 @@ def produce():
     station = Station(name=station_name)
 
     for i in range(5):  # Send only 5 messages for test
-        message = {'temperature': station.read(), 'name': station.name}
+        message = {'temperature': station.read(), 'name': station.name, 'timestamp': int(time.time())}
         channel.basic_publish(
             exchange='',
             routing_key=LOCAL_QUEUE,
@@ -61,9 +61,8 @@ def consume():
 
     def callback(ch, method, properties, body):
         print(" [x] Received %r" % body)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-
         print(" [x] Send message to the server %r" % body)
+        
         remote_channel.basic_publish(
             exchange='',
             routing_key=REMOTE_QUEUE,
@@ -71,6 +70,9 @@ def consume():
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             ))
+
+        # Only send the ack after sucessfuly send the message to the server
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
     local_channel.basic_qos(prefetch_count=1)
     local_channel.basic_consume(queue=LOCAL_QUEUE, on_message_callback=callback)
