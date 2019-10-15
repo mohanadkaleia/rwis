@@ -62,7 +62,6 @@ def consume():
     def callback(ch, method, properties, body):
         print(" [x] Received %r" % body)
         print(" [x] Send message to the server %r" % body)
-        
         remote_channel.basic_publish(
             exchange='',
             routing_key=REMOTE_QUEUE,
