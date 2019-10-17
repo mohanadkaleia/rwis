@@ -1,6 +1,10 @@
 import pika
 import config
+import tinydb
+import json
 
+db = tinydb.TinyDB('db.json')
+weather = db.table('weather')
 REMOTE_QUEUE = 'message_queue'
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.server['url']))
@@ -12,6 +16,7 @@ print(' [*] Server waiting for messages. To exit press CTRL+C')
 
 def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
+    weather.insert(json.loads(body))
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 

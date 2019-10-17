@@ -22,8 +22,11 @@ class Station:
 
 
 def produce():
-    station_name = sys.argv[1]
-    freq = int(sys.argv[2])
+    try:
+        station_name = sys.argv[1]
+        freq = int(sys.argv[2])
+    except IndexError:
+        station_name, freq = 'station0', 10
 
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.station['url']))
     channel = connection.channel()
@@ -31,7 +34,7 @@ def produce():
     station = Station(name=station_name)
 
     for i in range(5):  # Send only 5 messages for test
-        message = {'temperature': station.read(), 'name': station.name, 'timestamp': int(time.time())}
+        message = {'name': station.name, 'temperature': station.read(), 'timestamp': int(time.time())}
         channel.basic_publish(
             exchange='',
             routing_key=LOCAL_QUEUE,
