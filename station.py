@@ -5,6 +5,7 @@ import config
 import json
 import time
 import asyncio
+import requests
 
 from concurrent.futures import ProcessPoolExecutor
 
@@ -13,28 +14,50 @@ LOCAL_QUEUE = 'task_queue'
 REMOTE_QUEUE = 'message_queue'
 
 
+class LoginError(Exception):
+    pass
+
+
 class Station:
-    def __init__(self, name='st0'):
+    def __init__(self, name='st0', password='123456'):
         self.name = name
+        self.password = password
+        self.token = None
+        self.login()
 
     def read(self):
+        # This is just a simulation of temperature :)
         return random.choice(range(60, 100))
+
+    def login(self):
+        payload = {'name': self.name, 'password': self.password}
+        r = requests.post(f"http://{config.server['url']}:5000/login", payload)
+        if r.status_code != 200:
+            raise LoginError("Invalid name or password")
+
+        self.token = r.text
 
 
 def produce():
     try:
         station_name = sys.argv[1]
-        freq = int(sys.argv[2])
+        password = sys.argv[2]
+        freq = int(sys.argv[3])
     except IndexError:
-        station_name, freq = 'station0', 10
+        station_name, password, freq = 'st0', '123456', 10
 
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.station['url']))
     channel = connection.channel()
     channel.queue_declare(queue=LOCAL_QUEUE, durable=True)
-    station = Station(name=station_name)
+    station = Station(name=station_name, password=password)
 
     for i in range(5):  # Send only 5 messages for test
-        message = {'name': station.name, 'temperature': station.read(), 'timestamp': int(time.time())}
+        message = {
+            'name': station.name,
+            'temperature': station.read(),
+            'timestamp': int(time.time()),
+            'token': station.token
+        }
         channel.basic_publish(
             exchange='',
             routing_key=LOCAL_QUEUE,

@@ -2,6 +2,7 @@ import pika
 import config
 import tinydb
 import json
+import user
 
 db = tinydb.TinyDB('db.json')
 weather = db.table('weather')
@@ -16,7 +17,9 @@ print(' [*] Server waiting for messages. To exit press CTRL+C')
 
 def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
-    weather.insert(json.loads(body))
+    message = json.loads(body)
+    user.decode_auth_token(message['token'])
+    weather.insert(message)
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
